@@ -9,6 +9,7 @@ public class Main {
             OsmReader osmReader = new OsmReader(args[0]);
             try {
                 osmReader.parse();
+                osmReader.printOsm();
             }
             catch (Exception e) {
                 System.out.printf(e.toString());
