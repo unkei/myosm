@@ -1,6 +1,7 @@
 package com.company.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -9,10 +10,16 @@ import java.util.List;
 public class OsmWay {
     String id;
     List<OsmNode> osmNodes;
+    HashMap<String, String> tags;
 
     public OsmWay(String id, List<OsmNode> osmNodes) {
+        this(id, osmNodes, new HashMap<>());
+    }
+
+    public OsmWay(String id, List<OsmNode> osmNodes, HashMap<String, String> tags) {
         this.id = id;
         this.osmNodes = osmNodes;
+        this.tags = tags;
     }
 
     public String getId() {
@@ -21,5 +28,9 @@ public class OsmWay {
 
     public List<OsmNode> getOsmNodes() {
         return this.osmNodes;
+    }
+
+    public HashMap<String, String> getTags() {
+        return this.tags;
     }
 }

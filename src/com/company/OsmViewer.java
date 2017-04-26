@@ -10,6 +10,8 @@ import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.util.Animator;
 
+import java.util.HashMap;
+
 import static com.jogamp.opengl.GL2.*;
 
 /**
@@ -96,9 +98,40 @@ public class OsmViewer implements GLEventListener {
         gl.glClearColor(0, 0, 0, 1);
         gl.glClear(GL_COLOR_BUFFER_BIT);
 
-        gl.glColor4f(0, 0, 1f, 1f);
         for (OsmWay way: osm.ways) {
-            gl.glBegin(GL_LINE_STRIP);
+
+            HashMap<String, String> tags = way.getTags();
+
+            String building = tags.get("building");
+            String landuse = tags.get("landuse");
+            String route = tags.get("route");
+            if (building != null && !building.isEmpty()) {
+                gl.glColor4f(0f, 1f, 1f, 1f);
+                gl.glLineWidth(1f);
+                gl.glLineStipple(1, (short)0xFFFF);
+                gl.glBegin(GL_POLYGON);
+            } else if ("forest".equals(landuse) || "grass".equals(landuse)) {
+                gl.glColor4f(0f, 1f, 0f, 1f);
+                gl.glLineWidth(1f);
+                gl.glLineStipple(1, (short)0xFFFF);
+//                gl.glBegin(GL_POLYGON);
+                gl.glBegin(GL_LINE_STRIP);
+            } else if ("road".equals(route)) {
+                gl.glColor4f(0f, 0f, 1f, 1f);
+                gl.glLineWidth(5f);
+                gl.glLineStipple(1, (short)0xFFFF);
+                gl.glBegin(GL_LINE_STRIP);
+            } else if ("train".equals(route)) {
+                gl.glColor4f(1f, 1f, 1f, 1f);
+                gl.glLineWidth(5f);
+                gl.glLineStipple(1, (short)0xF0F0);
+                gl.glBegin(GL_LINE_STRIP);
+            } else {
+                gl.glColor4f(0.5f, 0, 0.5f, 1f);
+                gl.glLineWidth(1f);
+                gl.glLineStipple(1, (short)0xFFFF);
+                gl.glBegin(GL_LINE_STRIP);
+            }
             for (OsmNode node : way.getOsmNodes()) {
                 GeoCoordinate local = convToLocal(node.getGeoCoordinate());
                 gl.glVertex2f((float) local.longitude, (float) local.latitude);
@@ -106,9 +139,20 @@ public class OsmViewer implements GLEventListener {
             gl.glEnd();
         }
 
-        gl.glColor4f(1f, 0, 0, 1f);
         gl.glBegin(GL_POINTS);
         for (OsmNode node: osm.nodes) {
+            HashMap<String, String> tags = node.getTags();
+
+            if (tags.size() == 0) continue;
+
+            String v = tags.get("highway");
+            if ("bus_stop".equals(v)) {
+                gl.glColor4f(1f, 1f, 1f, 1f);
+            } else if ("traffic_signals".equals(v)) {
+                gl.glColor4f(1f, 1f, 0f, 1f);
+            } else {
+                gl.glColor4f(1f, 0, 0, 1f);
+            }
             GeoCoordinate local = convToLocal(node.getGeoCoordinate());
             gl.glVertex2f((float)local.longitude, (float)local.latitude);
         }

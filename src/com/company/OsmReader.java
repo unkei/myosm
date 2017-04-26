@@ -9,6 +9,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class OsmReader {
@@ -55,11 +56,18 @@ public class OsmReader {
                 double latitude = Double.parseDouble(childElement.getAttribute("lat"));
                 double longitude = Double.parseDouble(childElement.getAttribute("lon"));
 
-                OsmNode osmNode = new OsmNode(id, new GeoCoordinate(latitude, longitude));
-
-//                NodeList nodeChildren = childNode.getChildNodes();
-                // TODO: add tag handling.
-
+                HashMap<String, String> osmTags = new HashMap<>();
+                NodeList nodeChildren = childNode.getChildNodes();
+                for (int j=0; j<nodeChildren.getLength(); j++) {
+                    Node nodeChild = nodeChildren.item(j);
+                    if ("tag".equals(nodeChild.getNodeName())) {
+                        Element nodeChildElement = (Element)nodeChild;
+                        String k = nodeChildElement.getAttribute("k");
+                        String v = nodeChildElement.getAttribute("v");
+                        osmTags.put(k, v);
+                    }
+                }
+                OsmNode osmNode = new OsmNode(id, new GeoCoordinate(latitude, longitude), osmTags);
                 osm.nodes.add(osmNode);
 
             } else if ("way".equals(childNode.getNodeName())) {
@@ -67,6 +75,7 @@ public class OsmReader {
                 String id = childElement.getAttribute("id");
 
                 List<OsmNode> refOsmNodes = new ArrayList<>();
+                HashMap<String, String> osmTags = new HashMap<>();
 
                 NodeList wayChildren = childNode.getChildNodes();
                 for (int j=0; j<wayChildren.getLength(); j++) {
@@ -76,11 +85,15 @@ public class OsmReader {
                         String refId = wayChildElement.getAttribute("ref");
                         OsmNode refOsmNode = getOsmNodeById(osm.nodes, refId);
                         refOsmNodes.add(refOsmNode);
+                    } else if ("tag".equals(wayChild.getNodeName())) {
+                        Element nodeChildElement = (Element)wayChild;
+                        String k = nodeChildElement.getAttribute("k");
+                        String v = nodeChildElement.getAttribute("v");
+                        osmTags.put(k, v);
                     }
-                    // TODO: add tag handling.
                 }
 
-                OsmWay osmWay = new OsmWay(id, refOsmNodes);
+                OsmWay osmWay = new OsmWay(id, refOsmNodes, osmTags);
                 osm.ways.add(osmWay);
 
             } else if ("relation".equals(childNode.getNodeName())) {
@@ -108,6 +121,12 @@ public class OsmReader {
         for (OsmWay osmWay: osm.ways) {
             System.out.printf("<way id=%s>\n", osmWay.getId());
             printOsmNodes(osmWay.getOsmNodes(), 1);
+
+            HashMap<String, String> tags = osmWay.getTags();
+            for (String k: tags.keySet()) {
+                String v = tags.get(k);
+                System.out.printf("  %s=%s\n", k, v);
+            }
             System.out.printf("</way>\n");
         }
     }
@@ -122,7 +141,15 @@ public class OsmReader {
             for (int i=0; i<indent; i++) {
                 System.out.print("  ");
             }
-            System.out.printf("<node id=%s, lat=%f, lon=%f/>\n", osmNode.getId(), geoCoordinate.latitude, geoCoordinate.longitude);
+            System.out.printf("<node id=%s, lat=%f, lon=%f>\n", osmNode.getId(), geoCoordinate.latitude, geoCoordinate.longitude);
+            HashMap<String, String> tags = osmNode.getTags();
+            for (String k: tags.keySet()) {
+                String v = tags.get(k);
+                for (int i=0; i<indent; i++) {
+                    System.out.print("  ");
+                }
+                System.out.printf("  %s=%s\n", k, v);
+            }
         }
     }
 
