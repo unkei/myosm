@@ -1,38 +1,24 @@
 package com.company.data;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by unkei on 2017/04/25.
  */
-public class OsmNode {
-    String id;
+public class OsmNode extends OsmElement {
     GeoCoordinate geoCoordinate;
-    HashMap<String, String> tags;
-
-    public OsmNode(String id) {
-        this(id, new GeoCoordinate(), new HashMap<>());
-    }
-
-    public OsmNode(String id, GeoCoordinate geoCoordinate) {
-        this(id, geoCoordinate, new HashMap<>());
-    }
 
     public OsmNode(String id, GeoCoordinate geoCoordinate, HashMap<String, String> tags) {
-        this.id = id;
+        super(id, null, tags);
         this.geoCoordinate = geoCoordinate;
-        this.tags = tags;
-    }
-
-    public String getId() {
-        return this.id;
     }
 
     public GeoCoordinate getGeoCoordinate() {
         return this.geoCoordinate;
     }
 
-    public HashMap<String, String> getTags() {
-        return this.tags;
+    public static OsmNode getOsmNodeById(List<OsmNode> nodes, String id) {
+        return (OsmNode)getOsmElementById(nodes, id);
     }
 }

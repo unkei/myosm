@@ -7,30 +7,17 @@ import java.util.List;
 /**
  * Created by unkei on 2017/04/25.
  */
-public class OsmWay {
-    String id;
-    List<OsmNode> osmNodes;
-    HashMap<String, String> tags;
+public class OsmWay extends OsmElement {
 
-    public OsmWay(String id, List<OsmNode> osmNodes) {
-        this(id, osmNodes, new HashMap<>());
-    }
-
-    public OsmWay(String id, List<OsmNode> osmNodes, HashMap<String, String> tags) {
-        this.id = id;
-        this.osmNodes = osmNodes;
-        this.tags = tags;
-    }
-
-    public String getId() {
-        return this.id;
+    public OsmWay(String id, List<OsmNode> children, HashMap<String, String> tags) {
+        super(id, children, tags);
     }
 
     public List<OsmNode> getOsmNodes() {
-        return this.osmNodes;
+        return (List<OsmNode>)this.children;
     }
 
-    public HashMap<String, String> getTags() {
-        return this.tags;
+    public static OsmWay getOsmWayById(List<OsmWay> ways, String id) {
+        return (OsmWay) getOsmElementById(ways, id);
     }
 }

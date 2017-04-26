@@ -10,14 +10,17 @@ public class Osm {
     public OsmBounds bounds;
     public List<OsmNode> nodes;
     public List<OsmWay> ways;
+    public List<OsmRelation> relations;
 
     public Osm() {
         nodes = new ArrayList<>();
         ways = new ArrayList<>();
+        relations = new ArrayList<>();
     }
 
     public void clear() {
         nodes.clear();
         ways.clear();
+        relations.clear();
     }
 }
