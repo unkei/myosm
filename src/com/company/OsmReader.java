@@ -1,9 +1,6 @@
 package com.company;
 
-import com.company.data.GeoCoordinate;
-import com.company.data.OsmNode;
-import com.company.data.Osm;
-import com.company.data.OsmWay;
+import com.company.data.*;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
@@ -43,7 +40,14 @@ public class OsmReader {
 
             if ("bounds".equals(childNode.getNodeName())) {
 
-                // TODO: need anything?
+                Element childElement = (Element)childNode;
+                double minLat = Double.parseDouble(childElement.getAttribute("minlat"));
+                double minLon = Double.parseDouble(childElement.getAttribute("minlon"));
+                double maxLat = Double.parseDouble(childElement.getAttribute("maxlat"));
+                double maxLon = Double.parseDouble(childElement.getAttribute("maxlon"));
+
+                OsmBounds bounds = new OsmBounds(minLat, minLon, maxLat, maxLon);
+                osm.bounds = bounds;
 
             } else if ("node".equals(childNode.getNodeName())) {
                 Element childElement = (Element)childNode;
@@ -99,7 +103,7 @@ public class OsmReader {
         return null;
     }
 
-    public void printOsm() {
+    public static void printOsm(Osm osm) {
         printOsmNodes(osm.nodes);
         for (OsmWay osmWay: osm.ways) {
             System.out.printf("<way id=%s>\n", osmWay.getId());
@@ -108,11 +112,11 @@ public class OsmReader {
         }
     }
 
-    void printOsmNodes(List<OsmNode> osmNodes) {
+    static void printOsmNodes(List<OsmNode> osmNodes) {
         printOsmNodes(osmNodes, 0);
     }
 
-    void printOsmNodes(List<OsmNode> osmNodes, int indent) {
+    static void printOsmNodes(List<OsmNode> osmNodes, int indent) {
         for (OsmNode osmNode: osmNodes) {
             GeoCoordinate geoCoordinate = osmNode.getGeoCoordinate();
             for (int i=0; i<indent; i++) {

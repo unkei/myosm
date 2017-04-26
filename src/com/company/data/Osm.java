@@ -7,6 +7,7 @@ import java.util.List;
  * Created by unkei on 2017/04/25.
  */
 public class Osm {
+    public OsmBounds bounds;
     public List<OsmNode> nodes;
     public List<OsmWay> ways;
 
