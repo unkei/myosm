@@ -100,6 +100,23 @@ public class OsmReader {
 
             } else if ("relation".equals(childNode.getNodeName())) {
                 Element childElement = (Element)childNode;
+                String id = childElement.getAttribute("id");
+
+                HashMap<String, String> osmTags = new HashMap<>();
+
+                NodeList relationChildren = childElement.getChildNodes();
+                for (int j = 0; j < relationChildren.getLength(); j++) {
+                    Node relationChild = relationChildren.item(j);
+                    if ("tag".equals(relationChild.getNodeName())) {
+                        Element nodeChildElement = (Element) relationChild;
+                        String k = nodeChildElement.getAttribute("k");
+                        String v = nodeChildElement.getAttribute("v");
+                        osmTags.put(k, v);
+                    }
+                }
+
+                OsmRelation osmRelation = new OsmRelation(id, null, osmTags);
+                osm.relations.add(osmRelation);
                 relationElements.add(childElement);
             }
         }
@@ -108,8 +125,15 @@ public class OsmReader {
         for (Element relationElement: relationElements) {
             String id = relationElement.getAttribute("id");
 
+            OsmRelation osmRelation = OsmRelation.getOsmRelationById(osm.relations, id);
             List<OsmElement> osmMembers = new ArrayList<>();
-            HashMap<String, String> osmTags = new HashMap<>();
+
+            HashMap<String, String> tags = osmRelation.getTags();
+            String highway = tags.get("highway");
+            String natural = tags.get("natural");
+            String building = tags.get("building");
+            String building_part = tags.get("building:part");
+            String landuse = tags.get("landuse");
 
             NodeList relationChildren = relationElement.getChildNodes();
             for (int j = 0; j < relationChildren.getLength(); j++) {
@@ -124,22 +148,34 @@ public class OsmReader {
                         member = OsmNode.getOsmNodeById(osm.nodes, ref);
                     } else if ("way".equals(type)) {
                         member = OsmWay.getOsmWayById(osm.ways, ref);
+                        if (member != null) {
+                            HashMap<String, String> memberTags = member.getTags();
+                            if (highway != null) {
+                                memberTags.put("highway", highway);
+                            }
+                            if (natural != null) {
+                                memberTags.put("natural", natural);
+                            }
+                            if (building != null) {
+                                memberTags.put("building", building);
+                            }
+                            if (building_part != null) {
+                                memberTags.put("building:part", building_part);
+                            }
+                            if (landuse != null) {
+                                memberTags.put("landuse", landuse);
+                            }
+                        }
                     } else if ("relation".equals(type)) {
                         member = OsmRelation.getOsmRelationById(osm.relations, ref);
                     }
                     if (member != null) {
                         osmMembers.add(member);
                     }
-                } else if ("tag".equals(relationChild.getNodeName())) {
-                    Element nodeChildElement = (Element) relationChild;
-                    String k = nodeChildElement.getAttribute("k");
-                    String v = nodeChildElement.getAttribute("v");
-                    osmTags.put(k, v);
                 }
             }
 
-            OsmRelation osmRelation = new OsmRelation(id, osmMembers, osmTags);
-            osm.relations.add(osmRelation);
+            osmRelation.addChildren(osmMembers);
         }
 
         return osm;

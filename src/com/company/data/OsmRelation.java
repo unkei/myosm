@@ -11,6 +11,10 @@ public class OsmRelation extends OsmElement {
         super(id, children, tags);
     }
 
+    public void addChildren(List<? extends OsmElement>children) {
+        this.children = children;
+    }
+
     public static OsmRelation getOsmRelationById(List<OsmRelation> relations, String id) {
         return (OsmRelation) getOsmElementById(relations, id);
     }
