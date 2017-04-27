@@ -4,10 +4,15 @@ import com.company.data.GeoCoordinate;
 import com.company.data.Osm;
 import com.company.data.OsmNode;
 import com.company.data.OsmWay;
+import com.jogamp.newt.event.KeyEvent;
+import com.jogamp.newt.event.KeyListener;
 import com.jogamp.newt.event.WindowAdapter;
 import com.jogamp.newt.event.WindowEvent;
 import com.jogamp.newt.opengl.GLWindow;
 import com.jogamp.opengl.*;
+import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.GLUtessellator;
+import com.jogamp.opengl.glu.GLUtessellatorCallback;
 import com.jogamp.opengl.util.Animator;
 
 import java.util.HashMap;
@@ -17,7 +22,7 @@ import static com.jogamp.opengl.GL2.*;
 /**
  * Created by unkei on 2017/04/25.
  */
-public class OsmViewer implements GLEventListener {
+public class OsmViewer implements GLEventListener, KeyListener {
 
     Osm osm;
     double scaleLat = 1;
@@ -25,6 +30,8 @@ public class OsmViewer implements GLEventListener {
     GeoCoordinate center;
     GeoCoordinate min;
     GeoCoordinate max;
+
+    boolean wireframe = false;
 
     public OsmViewer() {
         this(null);
@@ -48,6 +55,7 @@ public class OsmViewer implements GLEventListener {
             }
         });
         glWindow.addGLEventListener(this);
+        glWindow.addKeyListener(this);
         Animator animator = new Animator();
         animator.add(glWindow);
         animator.start();
@@ -83,6 +91,7 @@ public class OsmViewer implements GLEventListener {
     @Override
     public void display(GLAutoDrawable glAutoDrawable) {
         GL2 gl = glAutoDrawable.getGL().getGL2();
+        GLU glu = new GLU();
         gl.glClearColor(0, 0, 0, 1);
         gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -113,60 +122,75 @@ public class OsmViewer implements GLEventListener {
             String route = tags.get("route");
             String highway = tags.get("highway");
 
+            boolean isPolygon = false;
+
             if (building != null || building_part != null) {
                 gl.glColor4f(0f, 1f, 1f, 1f);
                 gl.glLineWidth(1f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-//                gl.glBegin(GL_POLYGON);
-                gl.glBegin(GL_LINE_STRIP);
+                isPolygon = !wireframe;
             } else if ("forest".equals(landuse) || "grass".equals(landuse) || "wood".equals(natural)) {
                 gl.glColor4f(0f, 1f, 0f, 1f);
                 gl.glLineWidth(1f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-//                gl.glBegin(GL_POLYGON);
-                gl.glBegin(GL_LINE_STRIP);
+                isPolygon = !wireframe;
             } else if ("water".equals(natural)) {
                 gl.glColor4f(0f, 0f, 1f, 1f);
                 gl.glLineWidth(1f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-//                gl.glBegin(GL_POLYGON);
-                gl.glBegin(GL_LINE_STRIP);
+                isPolygon = !wireframe;
             } else if ("pedestrian".equals(highway)) {
                 gl.glColor4f(0f, 0.5f, 0f, 1f);
                 gl.glLineWidth(2f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-                gl.glBegin(GL_LINE_STRIP);
             } else if ("motorway".equals(highway)) {
                 gl.glColor4f(1f, 0.5f, 0f, 1f);
                 gl.glLineWidth(5f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-                gl.glBegin(GL_LINE_STRIP);
             } else if (highway != null) {
                 gl.glColor4f(1f, 1f, 1f, 1f);
                 gl.glLineWidth(3f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-                gl.glBegin(GL_LINE_STRIP);
             } else if ("road".equals(route)) {
                 gl.glColor4f(1f, 1f, 1f, 1f);
                 gl.glLineWidth(1f);
                 gl.glLineStipple(1, (short) 0xFFFF);
-                gl.glBegin(GL_LINE_STRIP);
             } else if ("train".equals(route)) {
                 gl.glColor4f(1f, 1f, 1f, 1f);
                 gl.glLineWidth(5f);
                 gl.glLineStipple(1, (short) 0xF0F0);
-                gl.glBegin(GL_LINE_STRIP);
             } else {
                 gl.glColor4f(0.5f, 0, 0.5f, 1f);
                 gl.glLineWidth(1f);
                 gl.glLineStipple(1, (short) 0xFFFF);
+            }
+            if (isPolygon) {
+                GLUtessellator tobj = glu.gluNewTess();
+                tessellCallBack tessCallback = new tessellCallBack(gl, glu);
+                glu.gluTessCallback(tobj, GLU.GLU_TESS_VERTEX, tessCallback);
+                glu.gluTessCallback(tobj, GLU.GLU_TESS_BEGIN, tessCallback);
+                glu.gluTessCallback(tobj, GLU.GLU_TESS_END, tessCallback);
+                glu.gluTessCallback(tobj, GLU.GLU_TESS_ERROR, tessCallback);
+                glu.gluTessCallback(tobj, GLU.GLU_TESS_COMBINE, tessCallback);
+                glu.gluTessBeginPolygon(tobj, null);
+                glu.gluTessBeginContour(tobj);
+                for (OsmNode node : way.getOsmNodes()) {
+                    GeoCoordinate local = convToLocal(node.getGeoCoordinate());
+//                    gl.glVertex2f((float) local.longitude, (float) local.latitude);
+                    double coord[] = {local.longitude, local.latitude, 0, 0.3f, 0.3f, 0.3f, 0.3f};
+                    glu.gluTessVertex(tobj, coord, 0, coord);
+                }
+                glu.gluTessEndContour(tobj);
+                glu.gluTessEndPolygon(tobj);
+                glu.gluDeleteTess(tobj);
+            } else {
                 gl.glBegin(GL_LINE_STRIP);
+                for (OsmNode node : way.getOsmNodes()) {
+                    GeoCoordinate local = convToLocal(node.getGeoCoordinate());
+                    gl.glVertex2f((float) local.longitude, (float) local.latitude);
+                }
+                gl.glEnd();
             }
-            for (OsmNode node : way.getOsmNodes()) {
-                GeoCoordinate local = convToLocal(node.getGeoCoordinate());
-                gl.glVertex2f((float) local.longitude, (float) local.latitude);
-            }
-            gl.glEnd();
         }
 
         for (OsmNode node : osm.nodes) {
@@ -213,5 +237,113 @@ public class OsmViewer implements GLEventListener {
 //        gl.glOrtho((float)-w/300, (float)w/300, (float)-h/300, (float)h/300, -1f, 1f);
 //        gl.glOrtho(-1f, 1f, (float)-h/w, (float)h/w, -1f, 1f);
         gl.glOrtho((float) -w / h, (float) w / h, -1f, 1f, -1f, 1f);
+    }
+
+    @Override
+    public void keyPressed(KeyEvent keyEvent) {
+        switch (keyEvent.getKeyCode()) {
+            case KeyEvent.VK_ESCAPE:
+                System.exit(0);
+                break;
+            case KeyEvent.VK_SPACE:
+                wireframe = !wireframe;
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent keyEvent) {
+
+    }
+
+    class tessellCallBack implements GLUtessellatorCallback {
+        private GL2 gl;
+        private GLU glu;
+
+        public tessellCallBack(GL2 gl, GLU glu) {
+            this.gl = gl;
+            this.glu = glu;
+        }
+
+        public void begin(int type) {
+            gl.glBegin(type);
+        }
+
+        public void end() {
+            gl.glEnd();
+        }
+
+        public void vertex(Object vertexData) {
+            double[] pointer;
+            if (vertexData instanceof double[]) {
+                pointer = (double[]) vertexData;
+                if (pointer.length == 6) gl.glColor3dv(pointer, 3);
+                gl.glVertex3dv(pointer, 0);
+            }
+
+        }
+
+        public void vertexData(Object vertexData, Object polygonData) {
+        }
+
+        /*
+         * combineCallback is used to create a new vertex when edges intersect.
+         * coordinate location is trivial to calculate, but weight[4] may be used to
+         * average color, normal, or texture coordinate data. In this program, color
+         * is weighted.
+         */
+        public void combine(double[] coords, Object[] data, //
+                            float[] weight, Object[] outData) {
+            double[] vertex = new double[6];
+            int i;
+
+            vertex[0] = coords[0];
+            vertex[1] = coords[1];
+            vertex[2] = coords[2];
+            for (i = 3; i < 6/* 7OutOfBounds from C! */; i++) {
+//                vertex[i] = weight[0] //
+//                        * ((double[]) data[0])[i] + weight[1]
+//                        * ((double[]) data[1])[i] + weight[2]
+//                        * ((double[]) data[2])[i] + weight[3]
+//                        * ((double[]) data[3])[i];
+                vertex[i] = 0;
+                for (int j=0; j<data.length; j++) {
+                    double[] d = (double[])data[j];
+                    if (d != null) {
+                        vertex[i] += weight[j] * d[i];
+                    }
+                }
+            }
+            outData[0] = vertex;
+        }
+
+        public void combineData(double[] coords, Object[] data, //
+                                float[] weight, Object[] outData, Object polygonData) {
+        }
+
+        public void error(int errnum) {
+            String estring;
+
+            estring = glu.gluErrorString(errnum);
+            System.err.println("Tessellation Error: " + estring);
+            System.exit(0);
+        }
+
+        public void beginData(int type, Object polygonData) {
+        }
+
+        public void endData(Object polygonData) {
+        }
+
+        public void edgeFlag(boolean boundaryEdge) {
+        }
+
+        public void edgeFlagData(boolean boundaryEdge, Object polygonData) {
+        }
+
+        public void errorData(int errnum, Object polygonData) {
+        }
     }
 }
