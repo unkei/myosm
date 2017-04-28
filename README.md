@@ -85,6 +85,6 @@ yeild return new WaitForSeconds( num ); // Stops for num seconds and resume.
 - LoadIdenty() is to reset and is done at first in every frame (possible to keep using but easier to reset).
 
 ### So far
-As of 28-Apr-2017, simple OSM file reader and renderer were made. Still a lot to do but here's the screen shot.
+As of 28-Apr-2017, simple OSM file reader and renderer were made in Java with [jogl](http://jogamp.org) on [IntelliJ IDEA](https://www.jetbrains.com/idea/). Still a lot to do but here's the screen shot. First to fix some water area is not filled, and then support more tags, height.
 ![simple reader&renderer](https://raw.githubusercontent.com/unkei/myosm/master/ScreenShot_tokyo_osm.png)
 

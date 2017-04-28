@@ -92,7 +92,7 @@ public class OsmViewer implements GLEventListener, KeyListener {
     public void display(GLAutoDrawable glAutoDrawable) {
         GL2 gl = glAutoDrawable.getGL().getGL2();
         GLU glu = new GLU();
-        gl.glClearColor(0, 0, 0, 1);
+        gl.glClearColor(0.2f, 0.1f, 0.1f, 1f);
         gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 //        gl.glEnable(GL_DEPTH_TEST);
