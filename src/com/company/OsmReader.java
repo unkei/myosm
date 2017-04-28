@@ -178,6 +178,45 @@ public class OsmReader {
             osmRelation.addChildren(osmMembers);
         }
 
+        // Relation 3rd pass: merge multipolygon
+        for (Element relationElement: relationElements) {
+            String id = relationElement.getAttribute("id");
+
+            OsmRelation osmRelation = OsmRelation.getOsmRelationById(osm.relations, id);
+
+            HashMap<String, String> tags = osmRelation.getTags();
+            String type = tags.get("type");
+
+            if (!"multipolygon".equals(type))
+                continue;
+
+            for (int i=0; i<osmRelation.getChildren().size(); i++) {
+                OsmElement e1 = osmRelation.getChildren().get(i);
+
+                if (e1 == null || e1.getClass() != OsmWay.class)
+                    continue;
+
+                OsmWay w1 = (OsmWay)e1;
+                if (w1.isClosed())
+                    continue;
+
+                for (int j=i; j<osmRelation.getChildren().size(); j++) {
+                    OsmElement e2 = osmRelation.getChildren().get(j);
+
+                    if (e2 == null || e2.getClass() != OsmWay.class)
+                        continue;
+
+                    OsmWay w2 = (OsmWay)e2;
+
+                    if (w1.isFollowedBy(w2)) {
+                        w1.addOsmWay(w2);
+                        osmRelation.getChildren().remove(e2);
+                        j = i; // loop again
+                    }
+                }
+            }
+        }
+
         return osm;
     }
 

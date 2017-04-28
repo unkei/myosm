@@ -123,48 +123,58 @@ public class OsmViewer implements GLEventListener, KeyListener {
             String highway = tags.get("highway");
 
             boolean isPolygon = false;
+            boolean isClosed = way.isClosed();
+            float r, g, b, a;
+            float lw;
+            short ls;
 
             if (building != null || building_part != null) {
-                gl.glColor4f(0f, 1f, 1f, 1f);
-                gl.glLineWidth(1f);
-                gl.glLineStipple(1, (short) 0xFFFF);
-                isPolygon = !wireframe;
+                r=0f; g=1f; b=1f; a=1f;
+                lw=1f;
+                ls=(short)0xFFFF;
+                isPolygon = !wireframe && isClosed;
             } else if ("forest".equals(landuse) || "grass".equals(landuse) || "wood".equals(natural)) {
-                gl.glColor4f(0f, 1f, 0f, 1f);
-                gl.glLineWidth(1f);
-                gl.glLineStipple(1, (short) 0xFFFF);
-                isPolygon = !wireframe;
+                r=0f; g=1f; b=0f; a=1f;
+                lw=1f;
+                ls=(short)0xFFFF;
+                isPolygon = !wireframe && isClosed;
             } else if ("water".equals(natural)) {
-                gl.glColor4f(0f, 0f, 1f, 1f);
-                gl.glLineWidth(1f);
-                gl.glLineStipple(1, (short) 0xFFFF);
-                isPolygon = !wireframe;
+                r=0f; g=0f; b=1f; a=1f;
+                lw=1f;
+                ls=(short)0xFFFF;
+                isPolygon = !wireframe && isClosed;
             } else if ("pedestrian".equals(highway)) {
-                gl.glColor4f(0f, 0.5f, 0f, 1f);
-                gl.glLineWidth(2f);
-                gl.glLineStipple(1, (short) 0xFFFF);
+                r=0f; g=0.5f; b=0f; a=1f;
+                lw=2f;
+                ls=(short)0xFFFF;
             } else if ("motorway".equals(highway)) {
-                gl.glColor4f(1f, 0.5f, 0f, 1f);
-                gl.glLineWidth(5f);
-                gl.glLineStipple(1, (short) 0xFFFF);
+                r=1f; g=0.5f; b=0f; a=1f;
+                lw=5f;
+                ls=(short)0xFFFF;
             } else if (highway != null) {
-                gl.glColor4f(1f, 1f, 1f, 1f);
-                gl.glLineWidth(3f);
-                gl.glLineStipple(1, (short) 0xFFFF);
+                r=1f; g=1f; b=1f; a=1f;
+                lw=3f;
+                ls=(short)0xFFFF;
             } else if ("road".equals(route)) {
-                gl.glColor4f(1f, 1f, 1f, 1f);
-                gl.glLineWidth(1f);
-                gl.glLineStipple(1, (short) 0xFFFF);
+                r=1f; g=1f; b=1f; a=1f;
+                lw=1f;
+                ls=(short)0xFFFF;
             } else if ("train".equals(route)) {
-                gl.glColor4f(1f, 1f, 1f, 1f);
-                gl.glLineWidth(5f);
-                gl.glLineStipple(1, (short) 0xF0F0);
+                r=1f; g=1f; b=1f; a=1f;
+                lw=5f;
+                ls=(short)0xF0F0;
             } else {
-                gl.glColor4f(0.5f, 0, 0.5f, 1f);
-                gl.glLineWidth(1f);
-                gl.glLineStipple(1, (short) 0xFFFF);
+                r=0.5f; g=0f; b=0.5f; a=1f;
+                lw=1f;
+                ls=(short)0xFFFF;
             }
             if (isPolygon) {
+                r *= 0.5f;
+                g *= 0.5f;
+                b *= 0.5f;
+                gl.glColor4f(r, g, b, a);
+                gl.glLineWidth(lw);
+                gl.glLineStipple(1, ls);
                 GLUtessellator tobj = glu.gluNewTess();
                 tessellCallBack tessCallback = new tessellCallBack(gl, glu);
                 glu.gluTessCallback(tobj, GLU.GLU_TESS_VERTEX, tessCallback);
@@ -177,13 +187,16 @@ public class OsmViewer implements GLEventListener, KeyListener {
                 for (OsmNode node : way.getOsmNodes()) {
                     GeoCoordinate local = convToLocal(node.getGeoCoordinate());
 //                    gl.glVertex2f((float) local.longitude, (float) local.latitude);
-                    double coord[] = {local.longitude, local.latitude, 0, 0.3f, 0.3f, 0.3f, 0.3f};
+                    double coord[] = {local.longitude, local.latitude, 0, r, g, b, a};
                     glu.gluTessVertex(tobj, coord, 0, coord);
                 }
                 glu.gluTessEndContour(tobj);
                 glu.gluTessEndPolygon(tobj);
                 glu.gluDeleteTess(tobj);
             } else {
+                gl.glColor4f(r, g, b, a);
+                gl.glLineWidth(lw);
+                gl.glLineStipple(1, ls);
                 gl.glBegin(GL_LINE_STRIP);
                 for (OsmNode node : way.getOsmNodes()) {
                     GeoCoordinate local = convToLocal(node.getGeoCoordinate());
